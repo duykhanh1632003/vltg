@@ -3,10 +3,3 @@ node_modules
 /storage
 /.history
 /.idea
-Base/controllers/vieclamtheogio/manageAccountCandidate.js
-Base/controllers/vieclamtheogio/manageAccountCompany.js
-Base/controllers/vieclamtheogio/toolVLTG.js
-Base/controllers/vieclamtheogio/viecLam.js
-Base/middleware/authJwt.js
-Base/routes/vieclamtheogio/viecLam.js
-Base/services/functions.js
