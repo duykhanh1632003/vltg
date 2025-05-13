@@ -897,7 +897,7 @@ exports.uploadFileNameRandom = async (folder, time_created, file_img) => {
 };
 
 exports.getLinkFile = (folder, time, fileName) => {
-  return "https://weone.vn/wp-content/uploads/2022/01/cach-xay-dung-hinh-anh-doanh-nghiep-3.png"
+  // return "https://weone.vn/wp-content/uploads/2022/01/cach-xay-dung-hinh-anh-doanh-nghiep-3.png"
   if (!fileName) return "";
   let date = new Date(time * 1000);
   const y = date.getFullYear();

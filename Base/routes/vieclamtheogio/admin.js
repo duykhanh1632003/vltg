@@ -5,8 +5,6 @@ var formData = require("express-form-data");
 const functions = require("../../services/functions");
 
 //dang nhap
-router.post("/createAdmin", formData.parse(), admin.createAdmin);
-
 router.post("/loginAdmin", formData.parse(), admin.loginAdmin);
 
 router.post(

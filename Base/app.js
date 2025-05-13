@@ -17,17 +17,13 @@ function configureApp(app) {
 }
 
 function errorApp(app) {
-  app.use(function (req, res, next) {
-    next(createError(404));
-  });
-
-  app.use(function (err, req, res, next) {
-    res.locals.message = err.message;
-    res.locals.error = req.app.get("env") === "development" ? err : {};
-    res.status(err.status || 500);
-    res.render("error");
+  app.use((req, res, next) => {
+    res.status(404).json({ success: false, message: "Not Found" });
   });
 }
+module.exports = errorApp;
+
+
 
 configureApp(app);
 var VLTGRouter = require("./routes/vieclamtheogio");

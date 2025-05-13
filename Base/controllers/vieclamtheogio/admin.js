@@ -181,46 +181,46 @@ exports.trangChu = async (req, res, next) => {
 
 exports.getInfoAdmin = async (req, res, next) => {
   try {
-    // let id_admin = req.infoAdmin.adm_id;
-    id_admin = Number(2);
+    let id_admin = req.infoAdmin.adm_id;
+    // id_admin = Number(2);
     let admin = await AdminUser.findOne({ adm_id: id_admin }).lean();
-    // if (admin) {
-    //   let adminRight;
-    //   if (admin.adm_isadmin != 1) {
-    //     adminRight = await AdminUserRight.aggregate([
-    //       { $match: { adu_admin_id: id_admin } },
-    //       {
-    //         $lookup: {
-    //           from: "VLTG_Modules",
-    //           localField: "adu_admin_module_id",
-    //           foreignField: "mod_id",
-    //           as: "Module",
-    //         },
-    //       },
-    //       { $match: { Module: { $ne: [] } } },
-    //       { $unwind: { path: "$Module", preserveNullAndEmptyArrays: true } },
-    //       {
-    //         $project: {
-    //           mod_id: "$adu_admin_module_id",
-    //           adu_add: "$adu_add",
-    //           adu_edit: "$adu_edit",
-    //           adu_delete: "$adu_delete",
-    //           mod_path: "$Module.mod_path",
-    //           mod_order: "$Module.mod_order",
-    //           mod_listname: "$Module.mod_listname",
-    //           mod_listfile: "$Module.mod_listfile",
-    //           lang_id: "$Module.lang_id",
-    //           mod_checkloca: "$Module.mod_checkloca",
-    //         },
-    //       },
-    //       { $sort: { mod_order: 1 } },
-    //     ]);
-    //   } else {
-    //     adminRight = await Modules.find({}).sort({ mod_order: 1 });
-    //   }
-    //   admin = { ...admin, adminRight };
-    //   return functions.success(res, "Get list module success", { admin });
-    // }
+    if (admin) {
+      let adminRight;
+      if (admin.adm_isadmin != 1) {
+        adminRight = await AdminUserRight.aggregate([
+          { $match: { adu_admin_id: id_admin } },
+          {
+            $lookup: {
+              from: "VLTG_Modules",
+              localField: "adu_admin_module_id",
+              foreignField: "mod_id",
+              as: "Module",
+            },
+          },
+          { $match: { Module: { $ne: [] } } },
+          { $unwind: { path: "$Module", preserveNullAndEmptyArrays: true } },
+          {
+            $project: {
+              mod_id: "$adu_admin_module_id",
+              adu_add: "$adu_add",
+              adu_edit: "$adu_edit",
+              adu_delete: "$adu_delete",
+              mod_path: "$Module.mod_path",
+              mod_order: "$Module.mod_order",
+              mod_listname: "$Module.mod_listname",
+              mod_listfile: "$Module.mod_listfile",
+              lang_id: "$Module.lang_id",
+              mod_checkloca: "$Module.mod_checkloca",
+            },
+          },
+          { $sort: { mod_order: 1 } },
+        ]);
+      } else {
+        adminRight = await Modules.find({}).sort({ mod_order: 1 });
+      }
+      admin = { ...admin, adminRight };
+      return functions.success(res, "Get list module success", { admin });
+    }
     return admin
     return functions.setError(res, "Admin not found!", 404);
   } catch (error) {
