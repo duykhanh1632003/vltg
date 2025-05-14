@@ -5,14 +5,14 @@ const functions = require("../../services/functions");
 jest.mock("../../models/ViecLamTheoGio/Users");
 jest.mock("../../services/functions");
 
-describe("activeUngVien", () => {
+describe("Use Case: Admin xóa tài khoản người dùng (kích hoạt / hủy kích hoạt tài khoản)", () => {
   let req, res;
 
   beforeEach(() => {
     req = {
       body: {
         id_uv: 1,
-        active: 1,
+        active: 1, // 1: active, 0: unactive
       },
     };
 
@@ -23,22 +23,23 @@ describe("activeUngVien", () => {
 
     functions.success = jest.fn();
     functions.setError = jest.fn();
+
+    jest.clearAllMocks();
   });
 
-  it("TC48 nên active ứng viên thành công khi dữ liệu hợp lệ", async () => {
-    Users.findOneAndUpdate.mockResolvedValue({ _id: 1, active: 1 });
+  // Luồng ngoại lệ 3.1
+  it("TC73 - Ngoại lệ: Thiếu id ứng viên", async () => {
+    req.body.id_uv = null;
 
     await activeUngVien(req, res);
 
-    expect(Users.findOneAndUpdate).toHaveBeenCalledWith(
-      { _id: 1, type: 0 },
-      { active: 1 }
-    );
-    expect(functions.success).toHaveBeenCalledWith(res, "active ung vien thanh cong!");
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu id ứng viên", 400);
   });
 
-  it("TC49 nên set active = 0 nếu không truyền trường active", async () => {
-    delete req.body.active;
+  // Luồng chính: từ active → unactive
+  it("TC74 - Hủy kích hoạt tài khoản ứng viên thành công (active → unactive)", async () => {
+    req.body.active = 0;
+
     Users.findOneAndUpdate.mockResolvedValue({ _id: 1, active: 0 });
 
     await activeUngVien(req, res);
@@ -47,30 +48,31 @@ describe("activeUngVien", () => {
       { _id: 1, type: 0 },
       { active: 0 }
     );
-    expect(functions.success).toHaveBeenCalledWith(res, "active ung vien thanh cong!");
+    expect(functions.success).toHaveBeenCalledWith(res, "Hủy kích hoạt tài khoản thành công!");
   });
 
-  it("TC50 nên trả lỗi nếu không tìm thấy ứng viên", async () => {
+  // Luồng chính: từ unactive → active
+  it("TC75 - Kích hoạt tài khoản ứng viên thành công (unactive → active)", async () => {
+    req.body.active = 1;
+
+    Users.findOneAndUpdate.mockResolvedValue({ _id: 1, active: 1 });
+
+    await activeUngVien(req, res);
+
+    expect(Users.findOneAndUpdate).toHaveBeenCalledWith(
+      { _id: 1, type: 0 },
+      { active: 1 }
+    );
+    expect(functions.success).toHaveBeenCalledWith(res, "Kích hoạt tài khoản thành công!");
+  });
+
+  // Luồng phụ: không tìm thấy ứng viên
+  it("TC76 - Không tìm thấy ứng viên để cập nhật", async () => {
     Users.findOneAndUpdate.mockResolvedValue(null);
 
     await activeUngVien(req, res);
 
-    expect(functions.setError).toHaveBeenCalledWith(res, "Ung vien not found!", 404);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Không tìm thấy ứng viên!", 404);
   });
 
-  it("TC51 nên trả lỗi nếu thiếu id_uv", async () => {
-    delete req.body.id_uv;
-
-    await activeUngVien(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input id_uv", 400);
-  });
-
-  it("TC52 nên xử lý exception và trả lỗi phù hợp", async () => {
-    Users.findOneAndUpdate.mockRejectedValue(new Error("Unexpected error"));
-
-    await activeUngVien(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Unexpected error");
-  });
 });

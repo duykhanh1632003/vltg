@@ -58,7 +58,7 @@ describe("getInfoAdmin", () => {
 
     expect(AdminUser.findOne).toHaveBeenCalledWith({ adm_id: 123 });
     expect(AdminUserRight.aggregate).toHaveBeenCalled();
-    expect(functions.success).toHaveBeenCalledWith(res, "Get list module success", {
+    expect(functions.success).toHaveBeenCalledWith(res, "Lấy danh sách quyền thành công", {
       admin: { ...mockAdmin, adminRight: mockAdminRights },
     });
   });
@@ -89,7 +89,7 @@ describe("getInfoAdmin", () => {
   
     expect(AdminUser.findOne).toHaveBeenCalledWith({ adm_id: 123 });
     expect(Modules.find).toHaveBeenCalled();
-    expect(functions.success).toHaveBeenCalledWith(res, "Get list module success", {
+    expect(functions.success).toHaveBeenCalledWith(res, "Lấy danh sách quyền thành công", {
       admin: { ...mockAdmin, adminRight: mockModules },
     });
   });
@@ -103,6 +103,6 @@ describe("getInfoAdmin", () => {
     await getInfoAdmin(req, res);
 
     expect(AdminUser.findOne).toHaveBeenCalledWith({ adm_id: 123 });
-    expect(functions.setError).toHaveBeenCalledWith(res, "Admin not found!", 404);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Không tìm thấy admin!", 404);
   });
 });

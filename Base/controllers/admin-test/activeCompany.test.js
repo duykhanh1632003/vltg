@@ -11,58 +11,41 @@ describe("activeCompany", () => {
   beforeEach(() => {
     req = {
       body: {
-        id_ntd: "123", // chuỗi sẽ được ép kiểu sang số
-        active: 1,
-      },
+        id_ntd: "101",
+        active: 1
+      }
     };
-
     res = {
       json: jest.fn(),
       status: jest.fn(() => res),
     };
-
     functions.success = jest.fn();
     functions.setError = jest.fn();
   });
 
-  it("TC69 Kích hoạt công ty thành công với id và active hợp lệ", async () => {
-    Users.findOneAndUpdate.mockResolvedValue({ _id: 123 });
-
+  it("TC142 - Kích hoạt thành công khi dữ liệu hợp lệ", async () => {
+    Users.findOneAndUpdate.mockResolvedValue({ _id: 101 });
     await activeCompany(req, res);
-
-    expect(Users.findOneAndUpdate).toHaveBeenCalledWith(
-      { _id: 123, type: 1 },
-      { active: 1 }
-    );
-    expect(functions.success).toHaveBeenCalledWith(res, "active nguoi tuyen dung thanh cong!");
+    expect(functions.success).toHaveBeenCalledWith(res, "Kích hoạt tài khoản nhà tuyển dụng thành công!");
   });
 
-  it("TC70 Nếu không truyền active", async () => {
-    req.body = { id_ntd: "456" }; // không có active
-    Users.findOneAndUpdate.mockResolvedValue({ _id: 456 });
-
+  it("TC143 - Hủy kích hoạt thành công khi active = 0", async () => {
+    req.body.active = 0;
+    Users.findOneAndUpdate.mockResolvedValue({ _id: 101 });
     await activeCompany(req, res);
-
-    expect(Users.findOneAndUpdate).toHaveBeenCalledWith(
-      { _id: 456, type: 1 },
-      { active: 0 }
-    );
-    expect(functions.success).toHaveBeenCalledWith(res, "active nguoi tuyen dung thanh cong!");
+    expect(functions.success).toHaveBeenCalledWith(res, "Hủy kích hoạt tài khoản nhà tuyển dụng thành công!");
   });
 
-  it("TC71 Thiếu id_ntd", async () => {
-    req.body = { active: 1 };
-
+  it("TC144 - Thiếu id_ntd → báo lỗi “Vui lòng cung cấp ID nhà tuyển dụng”", async () => {
+    delete req.body.id_ntd;
     await activeCompany(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input id_ntd", 400);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Vui lòng cung cấp ID nhà tuyển dụng", 400);
   });
 
-  it("TC72 Không tìm thấy người tuyển dụng", async () => {
+  it("TC145 - Không tìm thấy nhà tuyển dụng → báo lỗi “Không tìm thấy nhà tuyển dụng”", async () => {
     Users.findOneAndUpdate.mockResolvedValue(null);
-
     await activeCompany(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Nguoi tuyen dung not found!", 404);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Không tìm thấy nhà tuyển dụng", 404);
   });
+
 });

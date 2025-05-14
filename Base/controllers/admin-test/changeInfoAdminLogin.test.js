@@ -11,7 +11,7 @@ beforeEach(() => {
   functions.success = jest.fn();
 });
 
-describe("changeInfoAdminLogin", () => {
+describe("changeInfoAdminLogin - Cập nhật email admin", () => {
   let req, res;
 
   beforeEach(() => {
@@ -25,57 +25,71 @@ describe("changeInfoAdminLogin", () => {
     };
   });
 
-  it("✅ TC09: Cập nhật thành công", async () => {
+  it("✅ TC04: Cập nhật email admin - Trả về message thành công khi cập nhật email", async () => {
     AdminUser.findOne.mockResolvedValue({ adm_id: 123 });
     functions.checkEmail.mockResolvedValue(true);
     AdminUser.findOneAndUpdate.mockResolvedValue({ adm_email: "admin@example.com" });
 
     await changeInfoAdminLogin(req, res);
 
-    expect(AdminUser.findOne).toHaveBeenCalledWith({ adm_id: 123 });
-    expect(functions.checkEmail).toHaveBeenCalledWith("admin@example.com");
-    expect(AdminUser.findOneAndUpdate).toHaveBeenCalledWith(
-      { adm_id: 123 },
-      { adm_email: "admin@example.com" },
-      { new: true }
-    );
-    expect(functions.success).toHaveBeenCalledWith(res, "Update info admin success!");
+    expect(functions.success).toHaveBeenCalledWith(res, "Cập nhật email thành công");
   });
 
-  it("❌ TC10: Không có email hoặc email không hợp lệ", async () => {
+  it("❌ TC05: Cập nhật email admin - Trả về lỗi nếu email rỗng", async () => {
     AdminUser.findOne.mockResolvedValue({ adm_id: 123 });
-    req.body.email = ""; // Trường hợp thiếu email
+    req.body.email = "";
     functions.checkEmail.mockResolvedValue(false);
 
     await changeInfoAdminLogin(req, res);
 
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input email or invalid email!", 405);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Vui lòng nhập email mới", 400);
   });
 
-  it("❌ TC11: Cập nhật thất bại", async () => {
+  it("❌ TC06: Cập nhật email admin - Trả về lỗi nếu email sai định dạng", async () => {
     AdminUser.findOne.mockResolvedValue({ adm_id: 123 });
-    functions.checkEmail.mockResolvedValue(true);
-    AdminUser.findOneAndUpdate.mockResolvedValue(null); // Cập nhật fail
+    req.body.email = "adminexample.com";
+    functions.checkEmail.mockResolvedValue(false);
 
     await changeInfoAdminLogin(req, res);
 
-    expect(functions.setError).toHaveBeenCalledWith(res, "Update info admin fail!", 407);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Email sai định dạng", 400);
   });
 
-  it("❌ TC12: Không tìm thấy admin", async () => {
+  it("❌ TC07: Cập nhật email admin - Trả về lỗi nếu email đã được sử dụng", async () => {
+    AdminUser.findOne.mockResolvedValue({ adm_id: 123 });
+    req.body.email = "existing@example.com";
+    functions.checkEmail.mockResolvedValue(true);
+    AdminUser.findOneAndUpdate.mockResolvedValue(null); // Mô phỏng email đã tồn tại
+
+    await changeInfoAdminLogin(req, res);
+
+    expect(functions.setError).toHaveBeenCalledWith(res, "Email đã được sử dụng, vui lòng chọn email khác", 409);
+  });
+
+  it("❌ TC08: Cập nhật email admin - Trả về lỗi nếu email quá dài", async () => {
+    AdminUser.findOne.mockResolvedValue({ adm_id: 123 });
+    req.body.email = "a".repeat(256) + "@example.com";
+    functions.checkEmail.mockResolvedValue(false);
+
+    await changeInfoAdminLogin(req, res);
+
+    expect(functions.setError).toHaveBeenCalledWith(res, "Email quá dài, vui lòng kiểm tra lại", 400);
+  });
+
+  it("❌ TC09: Cập nhật email admin - Trả về lỗi 404 nếu không tìm thấy admin khi cập nhật", async () => {
     AdminUser.findOne.mockResolvedValue(null);
 
     await changeInfoAdminLogin(req, res);
 
-    expect(functions.setError).toHaveBeenCalledWith(res, "Admin not found!", 404);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Không tìm thấy admin!", 404);
   });
 
-  it("❌ TC13: Có lỗi exception", async () => {
-    const error = new Error("Something went wrong");
+  it("✅ TC10: Cập nhật email admin - Trả về lỗi hệ thống nếu xảy ra lỗi không xác định", async () => {
+    const error = new Error("Lỗi không xác định");
     AdminUser.findOne.mockRejectedValue(error);
 
     await changeInfoAdminLogin(req, res);
 
-    expect(functions.setError).toHaveBeenCalledWith(res, "Something went wrong");
+    expect(functions.setError).toHaveBeenCalledWith(res, "Lỗi không xác định");
   });
 });

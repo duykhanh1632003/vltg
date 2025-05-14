@@ -12,7 +12,7 @@ jest.mock("../../models/ViecLamTheoGio/UvCvmm");
 jest.mock("../../models/ViecLamTheoGio/JobCategory");
 jest.mock("../../models/ViecLamTheoGio/City2");
 jest.mock("../../services/functions");
-
+    
 describe("getDetailUngVien", () => {
   let req, res, next;
 

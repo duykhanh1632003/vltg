@@ -1,3 +1,4 @@
+// __tests__/updateCompany.test.js
 const { updateCompany } = require("../../controllers/vieclamtheogio/admin");
 const Users = require("../../models/ViecLamTheoGio/Users");
 const functions = require("../../services/functions");
@@ -42,70 +43,100 @@ describe("updateCompany", () => {
     functions.setError = jest.fn();
   });
 
-  it("TC61 Cập nhật thành công khi dữ liệu hợp lệ", async () => {
+  it("✅ TC124: Cập nhật thành công khi dữ liệu hợp lệ", async () => {
     Users.findOneAndUpdate.mockResolvedValue({ _id: 101 });
-
     await updateCompany(req, res);
-
-    expect(functions.success).toHaveBeenCalledWith(res, "Update ung vien sucess!");
+    expect(functions.success).toHaveBeenCalledWith(res, "Cập nhật công ty thành công!");
   });
 
-  it("TC62 Thiếu dữ liệu đầu vào", async () => {
-    delete req.body.email;
-
-    await updateCompany(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC63 Số điện thoại không hợp lệ – ví dụ: 'abc'", async () => {
+  it("❌ TC125: Số điện thoại không hợp lệ – ví dụ: 'abc'", async () => {
     req.body.phone = "abc";
     functions.checkPhoneNumber.mockReturnValue(false);
-
     await updateCompany(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "phone or email invalid", 401);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Số điện thoại không hợp lệ", 400);
   });
 
-  it("TC64 Email không hợp lệ – ví dụ: 'bad-email'", async () => {
+  it("❌ TC126: Email không hợp lệ – ví dụ: 'bad-email'", async () => {
     req.body.email = "bad-email";
     functions.checkEmail.mockReturnValue(false);
-
     await updateCompany(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "phone or email invalid", 401);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Sai định dạng email", 400);
   });
 
-  it("TC65 File avatar không hợp lệ", async () => {
+  it("❌ TC127: File avatar không hợp lệ", async () => {
     functions.checkFile.mockResolvedValue(false);
-
     await updateCompany(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Invalid image", 400);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Ảnh không hợp lệ", 400);
   });
 
-  it("TC66 Cập nhật không có avatar (không upload)", async () => {
+  it("✅ TC128: Cập nhật không có avatar (không upload)", async () => {
     delete req.files.avatar;
     Users.findOneAndUpdate.mockResolvedValue({ _id: 101 });
-
     await updateCompany(req, res);
-
-    expect(functions.success).toHaveBeenCalledWith(res, "Update ung vien sucess!");
+    expect(functions.success).toHaveBeenCalledWith(res, "Cập nhật công ty thành công!");
   });
 
-  it("TC67 Không tìm thấy công ty để cập nhật", async () => {
+  it("❌ TC129: Không tìm thấy công ty để cập nhật", async () => {
     Users.findOneAndUpdate.mockResolvedValue(null);
-
     await updateCompany(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Ung vien not found!");
+    expect(functions.setError).toHaveBeenCalledWith(res, "Không tìm thấy công ty", 404);
   });
 
-  it("TC68 Bắt exception và trả lỗi rõ ràng", async () => {
-    Users.findOneAndUpdate.mockRejectedValue(new Error("DB connection failed"));
-
+  it("❌ TC130: Email quá dài", async () => {
+    req.body.email = "a".repeat(256) + "@mail.com";
     await updateCompany(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Email quá dài", 400);
+  });
 
-    expect(functions.setError).toHaveBeenCalledWith(res, "DB connection failed");
+  it("❌ TC131: Mật khẩu dưới 6 ký tự", async () => {
+    req.body.password = "123";
+    await updateCompany(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Mật khẩu ít nhất 6 ký tự", 400);
+  });
+
+  it("❌ TC132: Upload ảnh vượt quá 5MB", async () => {
+    req.files.avatar = { path: "/tmp/avatar.jpg", size: 6 * 1024 * 1024 };
+    functions.checkImageSize = jest.fn(() => false);
+    await updateCompany(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Ảnh không được vượt quá 5MB", 400);
+  });
+
+  it("❌ TC133: Upload ảnh sai định dạng", async () => {
+    req.files.avatar = { path: "/tmp/avatar.txt" };
+    functions.checkFile.mockResolvedValue(false);
+    await updateCompany(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Chỉ cho phép định dạng ảnh JPG, JPEG, PNG", 400);
+  });
+
+  it("❌ TC134: Upload ảnh không đúng kích thước", async () => {
+    functions.checkImageDimension = jest.fn(() => false);
+    await updateCompany(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Nghị ảnh có kích thước 190x190 để hiển thị tối ưu", 400);
+  });
+
+  const requiredFields = {
+    _id: "mã nhà tuyển dụng",
+    userName: "tên công ty",
+    phone: "số điện thoại",
+    email: "email công ty",
+    password: "mật khẩu công ty",
+    city: "tỉnh thành",
+    district: "quận huyện",
+    address: "địa chỉ công ty",
+  };
+
+  let tcNumber = 135;
+  Object.entries(requiredFields).forEach(([field, label]) => {
+    it(`❌ TC${tcNumber++}: Thiếu trường ${field} → báo lỗi "Thiếu ${label}"`, async () => {
+      req.body[field] = "";
+      await updateCompany(req, res);
+      expect(functions.setError).toHaveBeenCalledWith(res, `Thiếu ${label}`, 400);
+    });
+
+    it(`❌ TC${tcNumber++}: Trường ${field} chỉ chứa khoảng trắng → báo lỗi "Thiếu ${label}"`, async () => {
+      req.body[field] = "   ";
+      await updateCompany(req, res);
+      expect(functions.setError).toHaveBeenCalledWith(res, `Thiếu ${label}`, 400);
+    });
   });
 });

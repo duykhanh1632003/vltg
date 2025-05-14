@@ -9,178 +9,179 @@ jest.mock("../../models/ViecLamTheoGio/UvCvmm");
 jest.mock("../../services/functions");
 jest.mock("md5", () => jest.fn(() => "hashedpassword"));
 
-describe("createUngVien", () => {
+describe("createUngVien - kiểm thử đầy đủ đặc tả và nhập toàn khoảng trắng", () => {
   let req, res;
-
+  afterEach(() => {
+    jest.clearAllMocks(); // Xóa sạch mọi mock calls
+  });
+  
   beforeEach(() => {
     req = {
       body: {
-        userName: "Test User",
+        userName: "Nguyễn Văn A",
         phone: "0912345678",
         email: "test@example.com",
-        password: "password123",
-        city: "HCM",
-        district: "1",
-        address: "123 Street",
-        uv_congviec: "Developer",
-        uv_diadiem: ["10", "20"],
-        uv_nganhnghe: ["1", "2"],
-        day: ["Monday", "Tuesday"],
+        password: "123456",
+        city: "Hà Nội",
+        district: "Ba Đình",
+        address: "Số 1 Đường ABC",
+        uv_congviec: "Nhân viên IT",
+        uv_diadiem: ["1", "2"],
+        uv_nganhnghe: ["CNTT", "Kỹ thuật"],
+        day: ["Monday", "Tuesday"]
       },
       files: {
-        avatar: { path: "/tmp/avatar.png" },
-      },
+        avatar: { path: "/tmp/avatar.png" }
+      }
     };
 
     res = {
       json: jest.fn(),
-      status: jest.fn(() => res),
+      status: jest.fn(() => res)
     };
-
+    Users.findOne.mockResolvedValue(null)
     functions.checkPhoneNumber.mockReturnValue(true);
     functions.checkEmail.mockReturnValue(true);
     functions.checkFile.mockResolvedValue(true);
     functions.convertTimestamp.mockReturnValue(1700000000);
     functions.uploadFileNameRandom.mockResolvedValue("avatar.png");
-    functions.renderAlias.mockReturnValue("test-user");
+    functions.renderAlias.mockReturnValue("nguyen-van-a");
     functions.getMaxIdByField.mockResolvedValue(1);
     functions.success = jest.fn();
     functions.setError = jest.fn();
+    jest.clearAllMocks();
   });
 
-  it("TC30 nên tạo ứng viên thành công với dữ liệu hợp lệ", async () => {
+  // ---- Đặc tả chính ----
+  it("TC20 - Tạo ứng viên - Tạo ứng viên thành công nếu hợp lệ", async () => {
     Users.findOne.mockResolvedValue(null);
     Users.prototype.save = jest.fn().mockResolvedValue(true);
     UvCvmm.prototype.save = jest.fn().mockResolvedValue(true);
 
     await createUngVien(req, res);
-
-    expect(functions.success).toHaveBeenCalledWith(res, "Create ung vien sucess!");
+    expect(functions.success).toHaveBeenCalledWith(res, "Tạo ứng viên thành công!");
   });
 
-  it("TC31 nên trả lỗi nếu userName rỗng", async () => {
+  it("TC21 - Tạo ứng viên - Thiếu userName", async () => {
     req.body.userName = "";
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu tên ứng viên", 400);
   });
 
-  it("TC32 nên trả lỗi nếu phone rỗng", async () => {
-    req.body.phone = "     ";
+  it("TC22 - Tạo ứng viên - userName toàn khoảng trắng", async () => {
+    req.body.userName = "   ";
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu tên ứng viên", 400);
   });
 
-  it("TC33 nên trả lỗi nếu email rỗng", async () => {
-    req.body.email = "";
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC34 nên trả lỗi nếu password rỗng", async () => {
-    req.body.password = "";
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC35 nên trả lỗi nếu city rỗng", async () => {
-    req.body.city = "";
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC36 nên trả lỗi nếu district rỗng", async () => {
-    req.body.district = "";
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC37 nên trả lỗi nếu address rỗng", async () => {
-    req.body.address = "";
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC38 nên trả lỗi nếu uv_congviec rỗng", async () => {
-    req.body.uv_congviec = "";
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC39 nên trả lỗi nếu uv_nganhnghe là mảng rỗng", async () => {
-    req.body.uv_nganhnghe = [];
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC40 nên trả lỗi nếu uv_diadiem là mảng rỗng", async () => {
-    req.body.uv_diadiem = [];
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC41 nên trả lỗi nếu day là mảng rỗng", async () => {
-    req.body.day = [];
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value!", 400);
-  });
-
-  it("TC42 nên trả lỗi nếu email không hợp lệ", async () => {
+  it("TC23 - Tạo ứng viên - Sai định dạng email", async () => {
     functions.checkEmail.mockReturnValue(false);
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "phone or email invalid", 401);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Báo lỗi sai định dạng email", 401);
   });
 
-  it("TC43 nên trả lỗi nếu số điện thoại không hợp lệ", async () => {
+  it("TC24 - Tạo ứng viên - Số điện thoại sai định dạng", async () => {
     functions.checkPhoneNumber.mockReturnValue(false);
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "phone or email invalid", 401);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Số điện thoại hiển thị không hợp lệ", 401);
   });
 
-  it("TC44 nên trả lỗi nếu email đã tồn tại", async () => {
-    Users.findOne.mockResolvedValue({ email: "test@example.com" });
+  it("TC25 - Tạo ứng viên - Email đã tồn tại", async () => {
+    Users.findOne.mockResolvedValue(true);
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Email da ton tai!");
+    expect(functions.setError).toHaveBeenCalledWith(res, "email đã tồn tại", 400);
   });
 
-  it("TC45 nên trả lỗi nếu file ảnh không hợp lệ", async () => {
+  it("TC26 - Tạo ứng viên - Thiếu địa điểm hoặc ngành nghề", async () => {
+    req.body.uv_diadiem = [];
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Vui lòng nhập đầy đủ thông tin!", 400);
+  });
+
+  it("TC27 - Tạo ứng viên - Không chọn buổi làm", async () => {
+    req.body.day = [];
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Vui lòng chọn ca có thể đi làm!", 400);
+  });
+
+  it("TC28 - Tạo ứng viên - Mật khẩu < 6 ký tự", async () => {
+    req.body.password = "123";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "mật khẩu ít nhất 6 ký tự", 400);
+  });
+
+  it("TC29 - Tạo ứng viên - Email dài hơn 255 ký tự", async () => {
+    req.body.email = "a".repeat(256) + "@example.com";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "email quá dài", 400);
+  });
+
+  it("TC30 - Tạo ứng viên - Kiểm tra giới hạn dung lượng ảnh", async () => {
     functions.checkFile.mockResolvedValue(false);
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Invalid image", 400);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Ảnh không được vượt quá 5MB", 400);
   });
 
-  it("TC46 nên xử lý được nếu không có avatar", async () => {
-    delete req.files.avatar;
-    Users.findOne.mockResolvedValue(null);
-    Users.prototype.save = jest.fn().mockResolvedValue(true);
-    UvCvmm.prototype.save = jest.fn().mockResolvedValue(true);
+  it("TC31 - Tạo ứng viên - Kiểm tra định dạng file (PDF)", async () => {
+    req.files.avatar.path = "/tmp/avatar.pdf";
+    functions.checkFile.mockResolvedValue(false);
     await createUngVien(req, res);
-    expect(functions.success).toHaveBeenCalledWith(res, "Create ung vien sucess!");
+    expect(functions.setError).toHaveBeenCalledWith(res, "Chỉ cho phép định dạng ảnh JPG, JPEG, PNG", 400);
   });
 
-  it("TC47 nên trả lỗi nếu có exception xảy ra", async () => {
-    Users.findOne.mockRejectedValue(new Error("Lỗi bất ngờ"));
+  it("TC32 - Tạo ứng viên - File không hợp lệ", async () => {
+    req.files.avatar.path = "/tmp/file.doc";
+    functions.checkFile.mockResolvedValue(false);
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "Lỗi bất ngờ");
-  });
-  it("TC48 nên trả lỗi nếu số điện thoại không đúng định dạng (ví dụ: chỉ có 2 chữ số)", async () => {
-    req.body.phone = "12";
-    functions.checkPhoneNumber.mockReturnValue(false); // Giả định hàm kiểm tra sai
-    await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "phone or email invalid", 401);
+    expect(functions.setError).toHaveBeenCalledWith(res, "File không hợp lệ. Vui lòng chọn ảnh.", 400);
   });
 
-  it("TC49 nên trả lỗi nếu email chỉ chứa khoảng trắng", async () => {
+  // ---- Kiểm tra nhập toàn space ----
+  it("TC33 - Tạo ứng viên - userName toàn khoảng trắng", async () => {
+    req.body.userName = "   ";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu tên ứng viên", 400);
+  });
+
+  it("TC34 - Tạo ứng viên - phone toàn khoảng trắng", async () => {
+    req.body.phone = "   ";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu số điện thoại", 400);
+  });
+
+  it("TC35 - Tạo ứng viên - email toàn khoảng trắng", async () => {
     req.body.email = "   ";
-    functions.checkEmail.mockReturnValue(false);
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "phone or email invalid", 401);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu email", 400);
   });
 
-  it("TC50 nên trả lỗi nếu email sai định dạng (ví dụ: khanh.com)", async () => {
-    req.body.email = "khanh.com";
-    functions.checkEmail.mockReturnValue(false);
+  it("TC36 - Tạo ứng viên - password toàn khoảng trắng", async () => {
+    req.body.password = "   ";
     await createUngVien(req, res);
-    expect(functions.setError).toHaveBeenCalledWith(res, "phone or email invalid", 401);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu mật khẩu", 400);
   });
 
+  it("TC37 - Tạo ứng viên - city toàn khoảng trắng", async () => {
+    req.body.city = "   ";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu tỉnh/thành", 400);
+  });
+
+  it("TC38 - Tạo ứng viên - district toàn khoảng trắng", async () => {
+    req.body.district = "   ";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu quận/huyện", 400);
+  });
+
+  it("TC39 - Tạo ứng viên - address toàn khoảng trắng", async () => {
+    req.body.address = "   ";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu địa chỉ ứng viên", 400);
+  });
+
+  it("TC40 - Tạo ứng viên - uv_congviec toàn khoảng trắng", async () => {
+    req.body.uv_congviec = "   ";
+    await createUngVien(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Thiếu công việc mong muốn", 400);
+  });
 });

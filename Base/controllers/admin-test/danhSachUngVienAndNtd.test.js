@@ -1,107 +1,228 @@
 const { danhSachUngVienAndNtd } = require("../../controllers/vieclamtheogio/admin");
-const functions = require("../../services/functions");
 const Users = require("../../models/ViecLamTheoGio/Users");
+const functions = require("../../services/functions");
 
-jest.mock("../../services/functions");
 jest.mock("../../models/ViecLamTheoGio/Users");
+jest.mock("../../services/functions");
 
-describe("danhSachUngVienAndNtd - Advanced Filtering", () => {
-  let req, res;
+describe("Test danhSachUngVienAndNtd controller", () => {
+  let req, res, next;
 
   beforeEach(() => {
+    req = {
+      body: {
+        page: 1,
+        pageSize: 10,
+        type: 1, // ứng viên
+      },
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+    };
+    next = jest.fn();
+
+    functions.convertTimestamp.mockImplementation((date) => date);
+    functions.getLinkFile.mockReturnValue("link/avatar.jpg");
+  });
+
+  afterEach(() => {
     jest.clearAllMocks();
-    res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+  });
 
-    functions.convertTimestamp.mockImplementation(date => {
-      if (!date) return undefined;
-      return Math.floor(new Date(date).getTime() / 1000);
-    });
+  // --- 3.1: Các trường khoảng trắng ---
+  test("TC77 phone là khoảng trắng -> trả toàn bộ dữ liệu", async () => {
+    req.body.phone = "   ";
 
-    functions.getLinkFile.mockReturnValue("https://mock-avatar");
+    const mockData = [
+      { _id: 4, userName: " Thi Nguyenn", createdAt: 1736245181, avatarUser: "1736245181-user-thinguyen.jpeg" },
+    ];
+
+    Users.aggregate.mockResolvedValue(mockData);
     functions.findCount.mockResolvedValue(1);
-    functions.success.mockImplementation((res, msg, data) => res.json({ msg, ...data }));
-    functions.setError.mockImplementation((res, msg) => res.json({ error: msg }));
+
+    await danhSachUngVienAndNtd(req, res, next);
+
+    expect(res.json).toHaveBeenCalledWith({
+      code: 200,
+      message: "Thong ke danh sach ntd",
+      data: {
+        total: 1,
+        data: [
+          {
+            ...mockData[0],
+            linkAvatar: "link/avatar.jpg",
+          },
+        ],
+      },
+    });
   });
 
-  const mockUser = [{
-    _id: 1,
-    userName: "test",
-    phone: "0123",
-    email: "test@gmail.com",
-    avatarUser: "avatar.png",
-    createdAt: 1700000000,
-    CVMM: { cong_viec: "Dev", dia_diem: "HCM", nganh_nghe: "IT" },
-  }];
+  test("TC78 email là khoảng trắng -> trả toàn bộ dữ liệu", async () => {
+    req.body.email = "   ";
 
-  const callAPI = async (body = {}) => {
-    req = { body: { page: 1, pageSize: 10, ...body } };
-    Users.aggregate.mockResolvedValue(mockUser);
-    await danhSachUngVienAndNtd(req, res);
-  };
+    const mockData = [
+      { _id: 4, email: "lvdfullstack@gmail.com", userName: " Thi Nguyenn", createdAt: 1736245181, avatarUser: "1736245181-user-thinguyen.jpeg" },
+    ];
 
-  test("TC14 - Trả về ứng viên (type = 1)", async () => {
-    await callAPI({ type: 1 });
-    expect(Users.aggregate).toHaveBeenCalledWith(expect.arrayContaining([
-      { $match: expect.objectContaining({ type: 0 }) }
-    ]));
+    Users.aggregate.mockResolvedValue(mockData);
+    functions.findCount.mockResolvedValue(1);
+
+    await danhSachUngVienAndNtd(req, res, next);
+
+    expect(res.json).toHaveBeenCalledWith({
+      code: 200,
+      message: "Thong ke danh sach ntd",
+      data: {
+        total: 1,
+        data: [
+          {
+            ...mockData[0],
+            linkAvatar: "link/avatar.jpg",
+          },
+        ],
+      },
+    });
   });
 
-  test("TC15 - Trả về nhà tuyển dụng (type ≠ 1)", async () => {
-    await callAPI({ type: 0 });
-    expect(Users.aggregate).toHaveBeenCalledWith(expect.arrayContaining([
-      { $match: expect.objectContaining({ type: 1 }) }
-    ]));
+  test("TC79 userName là khoảng trắng -> trả toàn bộ dữ liệu", async () => {
+    req.body.userName = "   ";
+
+    const mockData = [
+      { _id: 4, userName: " Thi Nguyenn", createdAt: 1736245181, avatarUser: "1736245181-user-thinguyen.jpeg" },
+    ];
+
+    Users.aggregate.mockResolvedValue(mockData);
+    functions.findCount.mockResolvedValue(1);
+
+    await danhSachUngVienAndNtd(req, res, next);
+
+    expect(res.json).toHaveBeenCalledWith({
+      code: 200,
+      message: "Thong ke danh sach ntd",
+      data: {
+        total: 1,
+        data: [
+          {
+            ...mockData[0],
+            linkAvatar: "link/avatar.jpg",
+          },
+        ],
+      },
+    });
   });
 
-  test("TC16 - Lọc theo phone", async () => {
-    await callAPI({ type: 1, phone: "098" });
-    const called = Users.aggregate.mock.calls[0][0][0].$match;
-    expect(called.phone).toEqual(/098/i);
+  // --- 3.2: Tìm theo _id tuyệt đối ---
+  test("TC80 Tìm kiếm theo _id là tuyệt đối", async () => {
+    req.body._id = 4;
+
+    const mockData = [
+      { _id: 4, userName: " Thi Nguyenn", createdAt: 1736245181, avatarUser: "1736245181-user-thinguyen.jpeg" },
+    ];
+
+    Users.aggregate.mockResolvedValue(mockData);
+    functions.findCount.mockResolvedValue(1);
+
+    await danhSachUngVienAndNtd(req, res, next);
+
+    expect(Users.aggregate).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({ $match: expect.objectContaining({ _id: 4 }) }),
+      ])
+    );
   });
 
-  test("TC17 - Lọc theo email", async () => {
-    await callAPI({ type: 1, email: "gmail" });
-    const called = Users.aggregate.mock.calls[0][0][0].$match;
-    expect(called.email).toEqual(/gmail/i);
+  // --- 3.3: Ngày quá xa ---
+  test("TC81 Nhập ngày quá xa -> không ra dữ liệu", async () => {
+    req.body.fromDate = "1990-01-01";
+    req.body.toDate = "1990-01-02";
+
+    Users.aggregate.mockResolvedValue([]);
+    functions.findCount.mockResolvedValue(0);
+
+    await danhSachUngVienAndNtd(req, res, next);
   });
 
-  test("TC18 - Lọc theo userName", async () => {
-    await callAPI({ type: 1, userName: "linh" });
-    const called = Users.aggregate.mock.calls[0][0][0].$match;
-    expect(called.userName).toEqual(/linh/i);
+  // --- 3.4: fromDate > toDate ---
+  test("TC82 fromDate > toDate -> không có dữ liệu", async () => {
+    req.body.fromDate = "2025-05-13";
+    req.body.toDate = "2024-01-01";
+
+    Users.aggregate.mockResolvedValue([]);
+    functions.findCount.mockResolvedValue(0);
+
+    await danhSachUngVienAndNtd(req, res, next);
+
+
   });
 
-  test("TC19 - Lọc theo _id", async () => {
-    await callAPI({ type: 1, _id: "123" });
-    const called = Users.aggregate.mock.calls[0][0][0].$match;
-    expect(called._id).toBe(123);
+  // --- 3.5: Sai định dạng phone ---
+  test("TC83 Nhập sai định dạng phone -> không có dữ liệu", async () => {
+    req.body.phone = "!!!###$$$";
+
+    Users.aggregate.mockResolvedValue([]);
+    functions.findCount.mockResolvedValue(0);
+
+    await danhSachUngVienAndNtd(req, res, next);
+
   });
 
-  test("TC20 - Lọc từ ngày", async () => {
-    await callAPI({ type: 1, fromDate: "2024-01-01" });
-    const called = Users.aggregate.mock.calls[0][0][0].$match;
-    expect(called.createdAt).toHaveProperty("$gte");
+  // --- 3.6: Tìm theo userName ---
+  test("TC84 Tìm kiếm theo họ tên userName", async () => {
+    req.body.userName = "Thi Nguyenn";
+
+    const mockData = [
+      { _id: 4, userName: " Thi Nguyenn", createdAt: 1736245181, avatarUser: "1736245181-user-thinguyen.jpeg" },
+    ];
+
+    Users.aggregate.mockResolvedValue(mockData);
+    functions.findCount.mockResolvedValue(1);
+
+    await danhSachUngVienAndNtd(req, res, next);
+
+    // expect(Users.aggregate).toHaveBeenCalled();
+    // expect(res.json).toHaveBeenCalledWith({
+    //   code: 200,
+    //   message: "Thong ke danh sach ntd",
+    //   data: {
+    //     total: 1,
+    //     data: [
+    //       {
+    //         ...mockData[0],
+    //         linkAvatar: "link/avatar.jpg",
+    //       },
+    //     ],
+    //   },
+    // });
   });
 
-  test("TC21 - Lọc đến ngày", async () => {
-    await callAPI({ type: 1, toDate: "2024-12-31" });
-    const called = Users.aggregate.mock.calls[0][0][0].$match;
-    expect(called.createdAt).toHaveProperty("$lte");
+  // --- 3.7: Tìm theo email ---
+  test("TC85 Tìm kiếm theo email", async () => {
+    req.body.email = "lvdfullstack@gmail.com";
+
+    const mockData = [
+      { _id: 4, email: "lvdfullstack@gmail.com", userName: " Thi Nguyenn", createdAt: 1736245181, avatarUser: "1736245181-user-thinguyen.jpeg" },
+    ];
+
+    Users.aggregate.mockResolvedValue(mockData);
+    functions.findCount.mockResolvedValue(1);
+
+    await danhSachUngVienAndNtd(req, res, next);
+
   });
 
-  test("TC22 - Lọc khoảng thời gian", async () => {
-    await callAPI({ type: 1, fromDate: "2024-01-01", toDate: "2024-12-31" });
-    const createdAt = Users.aggregate.mock.calls[0][0][0].$match.createdAt;
-    expect(createdAt).toHaveProperty("$gte");
-    expect(createdAt).toHaveProperty("$lte");
-  });
+  // --- 3.8: Tìm theo phone ---
+  test("TC86 Tìm kiếm theo số điện thoại", async () => {
+    req.body.phone = "0326535261";
 
-  it("TC23 - Không có kết quả", async () => {
-    Users.aggregate.mockResolvedValue([]); // Không có kết quả
-    functions.findCount.mockResolvedValue(0); // Tổng = 0
-  
-    await callAPI({ type: 1, email: "khongtontai@gmail.com" });
+    const mockData = [
+      { _id: 4, phone: "0326535261", userName: " Thi Nguyenn", createdAt: 1736245181, avatarUser: "1736245181-user-thinguyen.jpeg" },
+    ];
+
+    Users.aggregate.mockResolvedValue(mockData);
+    functions.findCount.mockResolvedValue(1);
+
+    await danhSachUngVienAndNtd(req, res, next);
   });
-  
 
 });

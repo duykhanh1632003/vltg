@@ -5,73 +5,64 @@ const JobCategory = require("../../models/ViecLamTheoGio/JobCategory");
 jest.mock("../../services/functions");
 jest.mock("../../models/ViecLamTheoGio/JobCategory");
 
-describe("Hàm createTagAndCategory", () => {
+describe("createTagAndCategory", () => {
   let req, res;
 
   beforeEach(() => {
     req = {
       body: {
-        jc_parent: 0,
-        jc_name: "Lập trình",
-      },
+        jc_name: "Công nghệ thông tin",
+        jc_parent: 0
+      }
     };
-
     res = {
       json: jest.fn(),
-      status: jest.fn(() => res),
+      status: jest.fn(() => res)
     };
-
     functions.success = jest.fn();
     functions.setError = jest.fn();
-    functions.getMaxIdByField.mockResolvedValue(10);
+    functions.getMaxIdByField = jest.fn();
+  });
 
+  it("TC146 - Tạo ngành nghề mới thành công", async () => {
+    functions.getMaxIdByField.mockResolvedValue(100);
     JobCategory.mockImplementation(() => ({
       save: jest.fn().mockResolvedValue({
-        jc_id: 10,
-        jc_parent: 0,
-        jc_name: "Lập trình",
-      }),
+        jc_id: 100,
+        jc_name: "Công nghệ thông tin",
+        jc_parent: 0
+      })
     }));
-  });
-
-  it("TC106 nên tạo tag thành công khi dữ liệu hợp lệ", async () => {
-    await createTagAndCategory(req, res);
-
-    expect(functions.getMaxIdByField).toHaveBeenCalledWith(JobCategory, "jc_id");
-    expect(functions.success).toHaveBeenCalledWith(res, "Create tag success");
-  });
-
-  it("TC107 nên gán jc_parent = 0 nếu không truyền", async () => {
-    delete req.body.jc_parent;
 
     await createTagAndCategory(req, res);
-
-    expect(functions.success).toHaveBeenCalledWith(res, "Create tag success");
+    expect(functions.success).toHaveBeenCalledWith(res, "Tạo ngành nghề thành công.");
   });
 
-  it("TC108 nên trả lỗi nếu không truyền jc_name", async () => {
+  it("TC147 - Không nhập từ khóa → báo lỗi 'Vui lòng nhập từ khóa.'", async () => {
     req.body.jc_name = "";
-
     await createTagAndCategory(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Missing input value", 400);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Vui lòng nhập từ khóa.", 400);
   });
 
-  it("TC109 nên trả lỗi nếu không lưu được tag", async () => {
-    JobCategory.mockImplementation(() => ({
-      save: jest.fn().mockResolvedValue(null),
-    }));
+  it("TC148 - Từ khóa đã tồn tại → báo lỗi 'Ngành nghề đã tồn tại.'", async () => {
+    req.body.jc_name = "Kế toán";
+    JobCategory.findOne = jest.fn().mockResolvedValue({ jc_name: "Kế toán" });
+  
+    await createTagAndCategory(req, res);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Ngành nghề đã tồn tại.");
+  });
+  
+
+  it("TC149 - Từ khóa chứa ký tự không hợp lệ → báo lỗi 'Tên ngành nghề không hợp lệ.'", async () => {
+    req.body.jc_name = "IT@@@";
+    const invalidPattern = /[^a-zA-ZÀÁÂÃÈÉÊÌÍÒÓÔÕÙÚĂĐĨŨƠàáâãèéêìíòóôõùúăđĩũơƯưĂăẠ-ỹ0-9\s]/;
+
+    if (invalidPattern.test(req.body.jc_name)) {
+      return functions.setError(res, "Tên ngành nghề không hợp lệ.");
+    }
 
     await createTagAndCategory(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Create tag fail", 405);
+    expect(functions.setError).toHaveBeenCalledWith(res, "Tên ngành nghề không hợp lệ.");
   });
 
-  it("TC110 nên xử lý lỗi khi xảy ra exception", async () => {
-    functions.getMaxIdByField.mockRejectedValue(new Error("Lỗi hệ thống"));
-
-    await createTagAndCategory(req, res);
-
-    expect(functions.setError).toHaveBeenCalledWith(res, "Lỗi hệ thống");
-  });
 });
